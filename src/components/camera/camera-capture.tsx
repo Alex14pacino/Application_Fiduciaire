@@ -10,26 +10,103 @@ interface CameraCaptureProps {
   onClose?: () => void
 }
 
+// Ratio A4 : largeur / hauteur = 21 / 29.7 = 0.707
+const A4_RATIO = 21 / 29.7
+
+// Marges fixes
+const MARGIN_TOP = 0.08      // 8% depuis le haut (espace pour les boutons et texte)
+const MARGIN_BOTTOM = 0.20   // 20% depuis le bas (espace pour le bouton capture)
+
+/**
+ * Calcule les dimensions du cadre A4 en fonction des dimensions de l'écran
+ * Le cadre aura toujours les proportions exactes d'une page A4
+ */
+function calculateA4Frame(containerWidth: number, containerHeight: number) {
+  // Zone disponible pour le cadre (en tenant compte des marges haut/bas)
+  const availableHeight = containerHeight * (1 - MARGIN_TOP - MARGIN_BOTTOM)
+  const availableWidth = containerWidth * 0.90 // 90% de la largeur max
+
+  // Calcule les dimensions du cadre en respectant le ratio A4
+  let frameWidth: number
+  let frameHeight: number
+
+  // On essaie d'abord avec la hauteur disponible
+  frameHeight = availableHeight
+  frameWidth = frameHeight * A4_RATIO
+
+  // Si le cadre est trop large, on ajuste par la largeur
+  if (frameWidth > availableWidth) {
+    frameWidth = availableWidth
+    frameHeight = frameWidth / A4_RATIO
+  }
+
+  // Calcule les positions (centré horizontalement)
+  const left = (containerWidth - frameWidth) / 2
+  const top = containerHeight * MARGIN_TOP
+  const right = containerWidth - left - frameWidth
+  const bottom = containerHeight - top - frameHeight
+
+  // Retourne les pourcentages
+  return {
+    top: top / containerHeight,
+    bottom: bottom / containerHeight,
+    left: left / containerWidth,
+    right: right / containerWidth,
+    width: frameWidth,
+    height: frameHeight,
+  }
+}
+
 /**
  * Composant de capture photo avec accès à la caméra
  * Utilise l'API getUserMedia pour accéder à la caméra du device
  */
-// Constantes pour les dimensions du cadre de guidage format A4 (ratio 1:1.414)
-// Le cadre est plus étroit pour correspondre au format A4 portrait
-const FRAME_TOP = 0.05    // 5% depuis le haut
-const FRAME_BOTTOM = 0.28 // 28% depuis le bas (espace pour le bouton)
-const FRAME_LEFT = 0.12   // 12% depuis la gauche (plus étroit)
-const FRAME_RIGHT = 0.12  // 12% depuis la droite (plus étroit)
-
 export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const cropCanvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [isCapturing, setIsCapturing] = useState(false)
+  const [frameStyle, setFrameStyle] = useState({
+    top: '8%',
+    bottom: '20%',
+    left: '15%',
+    right: '15%',
+  })
+  const [framePercentages, setFramePercentages] = useState({
+    top: 0.08,
+    bottom: 0.20,
+    left: 0.15,
+    right: 0.15,
+  })
+
+  /**
+   * Met à jour les dimensions du cadre lors du redimensionnement
+   */
+  const updateFrameDimensions = useCallback(() => {
+    if (!containerRef.current) return
+
+    const { clientWidth, clientHeight } = containerRef.current
+    const frame = calculateA4Frame(clientWidth, clientHeight)
+
+    setFrameStyle({
+      top: `${(frame.top * 100).toFixed(2)}%`,
+      bottom: `${(frame.bottom * 100).toFixed(2)}%`,
+      left: `${(frame.left * 100).toFixed(2)}%`,
+      right: `${(frame.right * 100).toFixed(2)}%`,
+    })
+
+    setFramePercentages({
+      top: frame.top,
+      bottom: frame.bottom,
+      left: frame.left,
+      right: frame.right,
+    })
+  }, [])
 
   /**
    * Démarre la caméra avec la direction spécifiée
@@ -73,7 +150,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   }, [stream])
 
   /**
-   * Capture une photo depuis le flux vidéo et la recadre selon le cadre vert
+   * Capture une photo depuis le flux vidéo et la recadre selon le cadre A4
    */
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || !cropCanvasRef.current) return
@@ -93,11 +170,11 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
     fullCtx.drawImage(video, 0, 0)
 
-    // Calcule les coordonnées de recadrage basées sur le cadre vert
-    const cropX = video.videoWidth * FRAME_LEFT
-    const cropY = video.videoHeight * FRAME_TOP
-    const cropWidth = video.videoWidth * (1 - FRAME_LEFT - FRAME_RIGHT)
-    const cropHeight = video.videoHeight * (1 - FRAME_TOP - FRAME_BOTTOM)
+    // Calcule les coordonnées de recadrage basées sur le cadre A4
+    const cropX = video.videoWidth * framePercentages.left
+    const cropY = video.videoHeight * framePercentages.top
+    const cropWidth = video.videoWidth * (1 - framePercentages.left - framePercentages.right)
+    const cropHeight = video.videoHeight * (1 - framePercentages.top - framePercentages.bottom)
 
     // Configure le canvas de recadrage
     cropCanvas.width = cropWidth
@@ -106,7 +183,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     const cropCtx = cropCanvas.getContext('2d')
     if (!cropCtx) return
 
-    // Dessine uniquement la zone du cadre vert
+    // Dessine uniquement la zone du cadre A4
     cropCtx.drawImage(
       fullCanvas,
       cropX, cropY, cropWidth, cropHeight,  // Source (zone à recadrer)
@@ -116,7 +193,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.9)
     setCapturedImage(dataUrl)
     setIsCapturing(false)
-  }, [])
+  }, [framePercentages])
 
   /**
    * Confirme la capture et envoie l'image recadrée
@@ -166,6 +243,13 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     return () => stopCamera()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facingMode])
+
+  // Met à jour les dimensions du cadre au montage et lors du redimensionnement
+  useEffect(() => {
+    updateFrameDimensions()
+    window.addEventListener('resize', updateFrameDimensions)
+    return () => window.removeEventListener('resize', updateFrameDimensions)
+  }, [updateFrameDimensions])
 
   // Écran de demande de permission
   if (hasPermission === false) {
@@ -217,7 +301,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
   // Écran de capture
   return (
-    <div className="relative h-full w-full bg-black">
+    <div ref={containerRef} className="relative h-full w-full bg-black">
       {/* Flux vidéo */}
       <video
         ref={videoRef}
@@ -234,16 +318,44 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
       {/* Overlay sombre avec cadre de guidage format A4 */}
       <div className="pointer-events-none absolute inset-0">
         {/* Zone sombre en haut */}
-        <div className="absolute left-0 right-0 top-0 h-[5%] bg-black/50" />
+        <div
+          className="absolute left-0 right-0 top-0 bg-black/50"
+          style={{ height: frameStyle.top }}
+        />
         {/* Zone sombre en bas */}
-        <div className="absolute bottom-0 left-0 right-0 h-[28%] bg-black/50" />
+        <div
+          className="absolute bottom-0 left-0 right-0 bg-black/50"
+          style={{ height: frameStyle.bottom }}
+        />
         {/* Zone sombre à gauche */}
-        <div className="absolute bottom-[28%] left-0 top-[5%] w-[12%] bg-black/50" />
+        <div
+          className="absolute left-0 bg-black/50"
+          style={{
+            top: frameStyle.top,
+            bottom: frameStyle.bottom,
+            width: frameStyle.left
+          }}
+        />
         {/* Zone sombre à droite */}
-        <div className="absolute bottom-[28%] right-0 top-[5%] w-[12%] bg-black/50" />
+        <div
+          className="absolute right-0 bg-black/50"
+          style={{
+            top: frameStyle.top,
+            bottom: frameStyle.bottom,
+            width: frameStyle.right
+          }}
+        />
 
         {/* Cadre de guidage vert format A4 */}
-        <div className="absolute bottom-[28%] left-[12%] right-[12%] top-[5%] border-2 border-green-400 rounded-lg">
+        <div
+          className="absolute border-2 border-green-400 rounded-lg"
+          style={{
+            top: frameStyle.top,
+            bottom: frameStyle.bottom,
+            left: frameStyle.left,
+            right: frameStyle.right,
+          }}
+        >
           {/* Coins accentués */}
           <div className="absolute -left-0.5 -top-0.5 h-8 w-8 border-l-4 border-t-4 border-green-400 rounded-tl-lg" />
           <div className="absolute -right-0.5 -top-0.5 h-8 w-8 border-r-4 border-t-4 border-green-400 rounded-tr-lg" />
@@ -252,7 +364,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         </div>
 
         {/* Texte d'instruction */}
-        <div className="absolute left-0 right-0 top-[1%] text-center">
+        <div className="absolute left-0 right-0 top-[2%] text-center">
           <p className="text-white text-sm font-medium drop-shadow-lg">
             Placez le document dans le cadre
           </p>
