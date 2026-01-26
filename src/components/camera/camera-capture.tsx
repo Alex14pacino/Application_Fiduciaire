@@ -15,11 +15,11 @@ interface CameraCaptureProps {
  * Utilise l'API getUserMedia pour accéder à la caméra du device
  */
 // Constantes pour les dimensions du cadre de guidage format A4 (ratio 1:1.414)
-// Le cadre est centré horizontalement et verticalement ajusté
-const FRAME_TOP = 0.08    // 8% depuis le haut
-const FRAME_BOTTOM = 0.18 // 18% depuis le bas (espace pour le bouton)
-const FRAME_LEFT = 0.08   // 8% depuis la gauche
-const FRAME_RIGHT = 0.08  // 8% depuis la droite
+// Le cadre est plus étroit pour correspondre au format A4 portrait
+const FRAME_TOP = 0.05    // 5% depuis le haut
+const FRAME_BOTTOM = 0.15 // 15% depuis le bas (espace pour le bouton)
+const FRAME_LEFT = 0.12   // 12% depuis la gauche (plus étroit)
+const FRAME_RIGHT = 0.12  // 12% depuis la droite (plus étroit)
 
 export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -234,16 +234,16 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
       {/* Overlay sombre avec cadre de guidage format A4 */}
       <div className="pointer-events-none absolute inset-0">
         {/* Zone sombre en haut */}
-        <div className="absolute left-0 right-0 top-0 h-[8%] bg-black/50" />
+        <div className="absolute left-0 right-0 top-0 h-[5%] bg-black/50" />
         {/* Zone sombre en bas */}
-        <div className="absolute bottom-0 left-0 right-0 h-[18%] bg-black/50" />
+        <div className="absolute bottom-0 left-0 right-0 h-[15%] bg-black/50" />
         {/* Zone sombre à gauche */}
-        <div className="absolute bottom-[18%] left-0 top-[8%] w-[8%] bg-black/50" />
+        <div className="absolute bottom-[15%] left-0 top-[5%] w-[12%] bg-black/50" />
         {/* Zone sombre à droite */}
-        <div className="absolute bottom-[18%] right-0 top-[8%] w-[8%] bg-black/50" />
+        <div className="absolute bottom-[15%] right-0 top-[5%] w-[12%] bg-black/50" />
 
         {/* Cadre de guidage vert format A4 */}
-        <div className="absolute bottom-[18%] left-[8%] right-[8%] top-[8%] border-2 border-green-400 rounded-lg">
+        <div className="absolute bottom-[15%] left-[12%] right-[12%] top-[5%] border-2 border-green-400 rounded-lg">
           {/* Coins accentués */}
           <div className="absolute -left-0.5 -top-0.5 h-8 w-8 border-l-4 border-t-4 border-green-400 rounded-tl-lg" />
           <div className="absolute -right-0.5 -top-0.5 h-8 w-8 border-r-4 border-t-4 border-green-400 rounded-tr-lg" />
@@ -252,7 +252,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         </div>
 
         {/* Texte d'instruction */}
-        <div className="absolute left-0 right-0 top-[2%] text-center">
+        <div className="absolute left-0 right-0 top-[1%] text-center">
           <p className="text-white text-sm font-medium drop-shadow-lg">
             Placez le document dans le cadre
           </p>
