@@ -76,21 +76,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Génère les URLs signées pour les images
-    const documentsWithUrls = await Promise.all(
-      (documents || []).map(async (doc) => {
-        if (doc.mime_type.startsWith('image/')) {
-          const { data } = await supabase.storage
-            .from('document-uploads')
-            .createSignedUrl(doc.file_path, 3600) // 1 heure
-
-          return { ...doc, signedUrl: data?.signedUrl }
-        }
-        return doc
-      })
-    )
-
-    return NextResponse.json({ documents: documentsWithUrls })
+    // Retourne les documents sans URLs signées pour un chargement plus rapide
+    // Les URLs sont chargées à la demande via /api/documents/[id]/thumbnail
+    return NextResponse.json({ documents: documents || [] })
   } catch (error) {
     console.error('Erreur documents:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

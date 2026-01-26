@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\\\Users\\\\Alex\\\\Desktop\\\\App_clients_fidu\")",
+      "Bash(dir:*)",
+      "Bash(npx create-next-app@14:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev)",
+      "Bash(ipconfig:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(ls:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit - FiduDocs PWA\n\nApplication de gestion documentaire pour fiduciaires et leurs clients:\n- Dashboard fiduciaire avec gestion des clients\n- PWA mobile pour les clients \\(capture photos, upload documents\\)\n- Intégration Supabase \\(Auth, Database, Storage\\)\n- Webhooks N8N pour justificatifs et tickets\n- Service Worker pour mode offline\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(npx vercel --prod)",
+      "Bash(npx vercel:*)"
+    ]
+  }
+}

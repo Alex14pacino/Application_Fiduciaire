@@ -1,6 +1,7 @@
 'use client'
 
-import { FileImage, Trash2, ExternalLink, Check } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { FileImage, Trash2, ExternalLink, Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils/cn'
@@ -18,11 +19,12 @@ interface DocumentCardProps {
 }
 
 /**
- * Carte d'affichage d'un document
+ * Carte d'affichage d'un document avec lazy loading
+ * Charge l'URL signée à la demande pour optimiser les performances
  */
 export function DocumentCard({
   document,
-  imageUrl,
+  imageUrl: initialImageUrl,
   onDelete,
   onView,
   isDeleting,
@@ -30,6 +32,10 @@ export function DocumentCard({
   isSelected = false,
   onSelect,
 }: DocumentCardProps) {
+  const [imageUrl, setImageUrl] = useState<string | undefined>(initialImageUrl)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false)
   const isImage = document.mime_type.startsWith('image/')
   const formattedDate = new Date(document.created_at).toLocaleDateString('fr-FR', {
     day: '2-digit',
@@ -38,6 +44,28 @@ export function DocumentCard({
     hour: '2-digit',
     minute: '2-digit',
   })
+
+  // Charge l'URL signée à la demande si c'est une image et qu'on n'a pas d'URL
+  useEffect(() => {
+    if (isImage && !imageUrl && !imageError && !isLoadingUrl) {
+      setIsLoadingUrl(true)
+      fetch(`/api/documents/${document.id}/thumbnail`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.signedUrl) {
+            setImageUrl(data.signedUrl)
+          } else {
+            setImageError(true)
+          }
+        })
+        .catch(() => {
+          setImageError(true)
+        })
+        .finally(() => {
+          setIsLoadingUrl(false)
+        })
+    }
+  }, [document.id, isImage, imageUrl, imageError, isLoadingUrl])
 
   const handleClick = () => {
     if (selectable && onSelect) {
@@ -57,13 +85,29 @@ export function DocumentCard({
         className="relative h-40 cursor-pointer bg-slate-100"
         onClick={handleClick}
       >
-        {isImage && imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageUrl}
-            alt={document.file_name}
-            className="h-full w-full object-cover"
-          />
+        {isImage && !imageError ? (
+          <>
+            {/* Placeholder pendant le chargement */}
+            {(!imageLoaded || isLoadingUrl) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+                <Loader2 className="h-8 w-8 text-slate-400 animate-spin" />
+              </div>
+            )}
+            {imageUrl && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={imageUrl}
+                alt={document.file_name}
+                className={cn(
+                  "h-full w-full object-cover transition-opacity duration-300",
+                  imageLoaded ? "opacity-100" : "opacity-0"
+                )}
+                loading="lazy"
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+              />
+            )}
+          </>
         ) : (
           <div className="flex h-full items-center justify-center">
             <FileImage className="h-12 w-12 text-slate-400" />
