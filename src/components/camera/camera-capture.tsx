@@ -170,8 +170,8 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
           className="h-full w-full object-contain"
         />
 
-        {/* Boutons d'action */}
-        <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-4 bg-gradient-to-t from-black/80 to-transparent p-6">
+        {/* Boutons d'action - pb-24 pour laisser de l'espace pour la barre de navigation mobile */}
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-4 bg-gradient-to-t from-black/80 to-transparent px-6 pb-24 pt-6">
           <Button onClick={retake} variant="outline" size="lg">
             Reprendre
           </Button>
@@ -220,8 +220,8 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         <SwitchCamera className="h-6 w-6" />
       </Button>
 
-      {/* Bouton de capture */}
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center bg-gradient-to-t from-black/80 to-transparent p-6">
+      {/* Bouton de capture - pb-24 pour laisser de l'espace pour la barre de navigation mobile */}
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center bg-gradient-to-t from-black/80 to-transparent px-6 pb-24 pt-6">
         <button
           onClick={capturePhoto}
           disabled={isCapturing}
