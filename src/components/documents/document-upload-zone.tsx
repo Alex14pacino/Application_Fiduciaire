@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { CameraCapture } from '@/components/camera/camera-capture'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { cn } from '@/lib/utils/cn'
+import { compressImageIfNeeded } from '@/lib/utils/image-compression'
 
 interface DocumentUploadZoneProps {
   onUpload: (file: File) => Promise<void>
@@ -127,12 +128,15 @@ export function DocumentUploadZone({
   )
 
   /**
-   * Confirme l'upload du fichier
+   * Confirme l'upload du fichier (avec compression si nécessaire)
    */
   const handleConfirmUpload = useCallback(async () => {
     if (!selectedFile) return
 
-    await onUpload(selectedFile)
+    // Compresse l'image si nécessaire (> 500KB)
+    const fileToUpload = await compressImageIfNeeded(selectedFile)
+
+    await onUpload(fileToUpload)
 
     // Réinitialise l'état
     setSelectedFile(null)

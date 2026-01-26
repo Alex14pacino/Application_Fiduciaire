@@ -37,18 +37,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Génère une URL signée avec transformation pour thumbnail (300px de large)
-    // Cela réduit significativement la taille du fichier téléchargé
+    // Génère une URL signée (1 heure de validité)
+    // Note: Les images sont compressées côté client avant l'upload
     const { data: signedUrlData } = await supabase.storage
       .from('document-uploads')
-      .createSignedUrl(document.file_path, 3600, {
-        transform: {
-          width: 300,
-          height: 400,
-          resize: 'contain',
-          quality: 75,
-        },
-      })
+      .createSignedUrl(document.file_path, 3600)
 
     return NextResponse.json({
       signedUrl: signedUrlData?.signedUrl,

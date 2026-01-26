@@ -151,6 +151,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
   /**
    * Capture une photo depuis le flux vidéo et la recadre selon le cadre A4
+   * L'image est redimensionnée et compressée pour optimiser la taille du fichier
    */
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || !cropCanvasRef.current) return
@@ -176,21 +177,37 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     const cropWidth = video.videoWidth * (1 - framePercentages.left - framePercentages.right)
     const cropHeight = video.videoHeight * (1 - framePercentages.top - framePercentages.bottom)
 
-    // Configure le canvas de recadrage
-    cropCanvas.width = cropWidth
-    cropCanvas.height = cropHeight
+    // Limite la taille maximale pour optimiser le poids du fichier
+    const MAX_WIDTH = 1200
+    const MAX_HEIGHT = 1600
+    let finalWidth = cropWidth
+    let finalHeight = cropHeight
+
+    if (finalWidth > MAX_WIDTH) {
+      finalHeight = (finalHeight * MAX_WIDTH) / finalWidth
+      finalWidth = MAX_WIDTH
+    }
+    if (finalHeight > MAX_HEIGHT) {
+      finalWidth = (finalWidth * MAX_HEIGHT) / finalHeight
+      finalHeight = MAX_HEIGHT
+    }
+
+    // Configure le canvas de recadrage avec les dimensions optimisées
+    cropCanvas.width = finalWidth
+    cropCanvas.height = finalHeight
 
     const cropCtx = cropCanvas.getContext('2d')
     if (!cropCtx) return
 
-    // Dessine uniquement la zone du cadre A4
+    // Dessine uniquement la zone du cadre A4, redimensionnée
     cropCtx.drawImage(
       fullCanvas,
       cropX, cropY, cropWidth, cropHeight,  // Source (zone à recadrer)
-      0, 0, cropWidth, cropHeight            // Destination (canvas entier)
+      0, 0, finalWidth, finalHeight          // Destination (dimensions optimisées)
     )
 
-    const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.9)
+    // Qualité 0.8 pour un bon compromis taille/qualité
+    const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.8)
     setCapturedImage(dataUrl)
     setIsCapturing(false)
   }, [framePercentages])
@@ -208,7 +225,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         }
       },
       'image/jpeg',
-      0.9
+      0.8  // Qualité 80% pour réduire la taille
     )
   }, [capturedImage, onCapture])
 
