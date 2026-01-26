@@ -198,13 +198,41 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
       {/* Canvas caché pour la capture */}
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* Overlay sombre avec cadre de guidage */}
+      <div className="pointer-events-none absolute inset-0">
+        {/* Zone sombre en haut */}
+        <div className="absolute left-0 right-0 top-0 h-[15%] bg-black/50" />
+        {/* Zone sombre en bas */}
+        <div className="absolute bottom-0 left-0 right-0 h-[25%] bg-black/50" />
+        {/* Zone sombre à gauche */}
+        <div className="absolute bottom-[25%] left-0 top-[15%] w-[5%] bg-black/50" />
+        {/* Zone sombre à droite */}
+        <div className="absolute bottom-[25%] right-0 top-[15%] w-[5%] bg-black/50" />
+
+        {/* Cadre de guidage vert */}
+        <div className="absolute bottom-[25%] left-[5%] right-[5%] top-[15%] border-2 border-green-400 rounded-lg">
+          {/* Coins accentués */}
+          <div className="absolute -left-0.5 -top-0.5 h-6 w-6 border-l-4 border-t-4 border-green-400 rounded-tl-lg" />
+          <div className="absolute -right-0.5 -top-0.5 h-6 w-6 border-r-4 border-t-4 border-green-400 rounded-tr-lg" />
+          <div className="absolute -bottom-0.5 -left-0.5 h-6 w-6 border-b-4 border-l-4 border-green-400 rounded-bl-lg" />
+          <div className="absolute -bottom-0.5 -right-0.5 h-6 w-6 border-b-4 border-r-4 border-green-400 rounded-br-lg" />
+        </div>
+
+        {/* Texte d'instruction */}
+        <div className="absolute left-0 right-0 top-[5%] text-center">
+          <p className="text-white text-sm font-medium drop-shadow-lg">
+            Placez le document dans le cadre
+          </p>
+        </div>
+      </div>
+
       {/* Bouton fermer */}
       {onClose && (
         <Button
           onClick={handleClose}
           variant="ghost"
           size="icon"
-          className="absolute left-4 top-4 text-white hover:bg-white/20"
+          className="absolute left-4 top-4 text-white hover:bg-white/20 z-10"
         >
           <X className="h-6 w-6" />
         </Button>
@@ -215,13 +243,13 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         onClick={switchCamera}
         variant="ghost"
         size="icon"
-        className="absolute right-4 top-4 text-white hover:bg-white/20"
+        className="absolute right-4 top-4 text-white hover:bg-white/20 z-10"
       >
         <SwitchCamera className="h-6 w-6" />
       </Button>
 
       {/* Bouton de capture - pb-24 pour laisser de l'espace pour la barre de navigation mobile */}
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center bg-gradient-to-t from-black/80 to-transparent px-6 pb-24 pt-6">
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center bg-gradient-to-t from-black/80 to-transparent px-6 pb-24 pt-6 z-10">
         <button
           onClick={capturePhoto}
           disabled={isCapturing}
