@@ -14,9 +14,16 @@ interface CameraCaptureProps {
  * Composant de capture photo avec accès à la caméra
  * Utilise l'API getUserMedia pour accéder à la caméra du device
  */
+// Constantes pour les dimensions du cadre de guidage (en pourcentage)
+const FRAME_TOP = 0.15    // 15% depuis le haut
+const FRAME_BOTTOM = 0.25 // 25% depuis le bas
+const FRAME_LEFT = 0.05   // 5% depuis la gauche
+const FRAME_RIGHT = 0.05  // 5% depuis la droite
+
 export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const cropCanvasRef = useRef<HTMLCanvasElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
@@ -65,36 +72,58 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   }, [stream])
 
   /**
-   * Capture une photo depuis le flux vidéo
+   * Capture une photo depuis le flux vidéo et la recadre selon le cadre vert
    */
   const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return
+    if (!videoRef.current || !canvasRef.current || !cropCanvasRef.current) return
 
     setIsCapturing(true)
 
     const video = videoRef.current
-    const canvas = canvasRef.current
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    const fullCanvas = canvasRef.current
+    const cropCanvas = cropCanvasRef.current
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    // Capture l'image complète d'abord
+    fullCanvas.width = video.videoWidth
+    fullCanvas.height = video.videoHeight
 
-    // Dessine l'image actuelle de la vidéo sur le canvas
-    ctx.drawImage(video, 0, 0)
+    const fullCtx = fullCanvas.getContext('2d')
+    if (!fullCtx) return
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+    fullCtx.drawImage(video, 0, 0)
+
+    // Calcule les coordonnées de recadrage basées sur le cadre vert
+    const cropX = video.videoWidth * FRAME_LEFT
+    const cropY = video.videoHeight * FRAME_TOP
+    const cropWidth = video.videoWidth * (1 - FRAME_LEFT - FRAME_RIGHT)
+    const cropHeight = video.videoHeight * (1 - FRAME_TOP - FRAME_BOTTOM)
+
+    // Configure le canvas de recadrage
+    cropCanvas.width = cropWidth
+    cropCanvas.height = cropHeight
+
+    const cropCtx = cropCanvas.getContext('2d')
+    if (!cropCtx) return
+
+    // Dessine uniquement la zone du cadre vert
+    cropCtx.drawImage(
+      fullCanvas,
+      cropX, cropY, cropWidth, cropHeight,  // Source (zone à recadrer)
+      0, 0, cropWidth, cropHeight            // Destination (canvas entier)
+    )
+
+    const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.9)
     setCapturedImage(dataUrl)
     setIsCapturing(false)
   }, [])
 
   /**
-   * Confirme la capture et envoie l'image
+   * Confirme la capture et envoie l'image recadrée
    */
   const confirmCapture = useCallback(() => {
-    if (!capturedImage || !canvasRef.current) return
+    if (!capturedImage || !cropCanvasRef.current) return
 
-    canvasRef.current.toBlob(
+    cropCanvasRef.current.toBlob(
       (blob) => {
         if (blob) {
           onCapture(blob, capturedImage)
@@ -195,8 +224,9 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         className="h-full w-full object-cover"
       />
 
-      {/* Canvas caché pour la capture */}
+      {/* Canvas cachés pour la capture et le recadrage */}
       <canvas ref={canvasRef} className="hidden" />
+      <canvas ref={cropCanvasRef} className="hidden" />
 
       {/* Overlay sombre avec cadre de guidage */}
       <div className="pointer-events-none absolute inset-0">
