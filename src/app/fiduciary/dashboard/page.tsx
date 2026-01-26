@@ -53,7 +53,7 @@ export default async function FiduciaryDashboardPage() {
   // Clients récents (basé sur la date du dernier document envoyé)
   let recentClients: Array<{
     id: string
-    profile: { full_name: string | null; email: string }
+    profile: { full_name: string | null; email: string } | null
     last_document_date: string | null
   }> = []
 
@@ -75,9 +75,11 @@ export default async function FiduciaryDashboardPage() {
       const lastDocDate = docs.length > 0
         ? docs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
         : null
+      // Le profile peut être un objet ou un tableau selon la relation Supabase
+      const profileData = Array.isArray(client.profile) ? client.profile[0] : client.profile
       return {
         id: client.id,
-        profile: client.profile as { full_name: string | null; email: string },
+        profile: profileData as { full_name: string | null; email: string } | null,
         last_document_date: lastDocDate,
       }
     })
