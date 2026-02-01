@@ -18,8 +18,8 @@ export default async function ClientDashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Récupère les infos du client
-  const { data: clientData } = await supabase
+  // Récupère les infos du client ET le nombre de documents en parallèle
+  const clientPromise = supabase
     .from('clients')
     .select(`
       id,
@@ -28,17 +28,16 @@ export default async function ClientDashboardPage() {
     .eq('profile_id', user!.id)
     .single()
 
-  const client = clientData as { id: string; fiduciary: { company_name: string | null } | null } | null
+  // On lance aussi le count en parallèle via une sous-requête
+  const countPromise = supabase
+    .from('documents')
+    .select('client_id, clients!inner(profile_id)', { count: 'exact', head: true })
+    .eq('clients.profile_id', user!.id)
 
-  // Compte les documents
-  let documentsCount = 0
-  if (client?.id) {
-    const { count } = await supabase
-      .from('documents')
-      .select('*', { count: 'exact', head: true })
-      .eq('client_id', client.id)
-    documentsCount = count || 0
-  }
+  const [{ data: clientData }, { count }] = await Promise.all([clientPromise, countPromise])
+
+  const client = clientData as { id: string; fiduciary: { company_name: string | null } | null } | null
+  const documentsCount = count || 0
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-6 px-4">

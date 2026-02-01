@@ -6,6 +6,7 @@ import { MobileNav } from '@/components/layout/mobile-nav'
 /**
  * Layout pour les pages client
  * Inclut l'en-tête et la navigation mobile
+ * Note: L'auth et le rôle sont déjà vérifiés par le middleware
  */
 export default async function ClientLayout({
   children,
@@ -22,17 +23,12 @@ export default async function ClientLayout({
     redirect('/login')
   }
 
-  // Récupère le profil pour afficher le nom
+  // Récupère uniquement le nom (le rôle est déjà vérifié par le middleware)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role')
+    .select('full_name')
     .eq('id', user.id)
     .single()
-
-  // Vérifie que c'est bien un client
-  if (profile?.role !== 'client') {
-    redirect('/fiduciary/dashboard')
-  }
 
   return (
     <div className="min-h-screen bg-slate-50">

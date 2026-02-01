@@ -1,11 +1,24 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle } from 'lucide-react'
-import { DocumentUploadZone } from '@/components/documents/document-upload-zone'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+
+// Lazy load du composant d'upload (inclut la caméra qui est lourde)
+const DocumentUploadZone = dynamic(
+  () => import('@/components/documents/document-upload-zone').then(mod => ({ default: mod.DocumentUploadZone })),
+  {
+    loading: () => (
+      <div className="flex justify-center py-8">
+        <LoadingSpinner size="lg" className="text-slate-600" />
+      </div>
+    ),
+  }
+)
 
 /**
  * Page de capture de document
