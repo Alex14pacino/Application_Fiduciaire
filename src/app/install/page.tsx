@@ -118,7 +118,7 @@ export default function InstallPage() {
                         2
                       </span>
                       <span>
-                        Appuyez sur <strong>&quot;Installer l&apos;application&quot;</strong> ou <strong>&quot;Ajouter à l&apos;écran d&apos;accueil&quot;</strong>
+                        Appuyez sur <strong>&quot;Ajouter à l&apos;écran d&apos;accueil&quot;</strong>
                       </span>
                     </li>
                   </ol>
