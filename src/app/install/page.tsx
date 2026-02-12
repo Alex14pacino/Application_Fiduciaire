@@ -3,17 +3,16 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FileText, Shield, Smartphone, ArrowRight } from 'lucide-react'
+import { FileText, Download, Share, Plus, MoreVertical, ArrowRight, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { InstallButton } from '@/components/pwa/install-button'
-import { IOSInstructions } from '@/components/pwa/ios-instructions'
 import { markInstallSeen } from '@/components/pwa/install-redirect'
 import { usePWAInstall } from '@/lib/hooks/use-pwa-install'
 
 export default function InstallPage() {
   const router = useRouter()
-  const { isInstalled, isIOS, isAndroid, isMobile, isInstallable } = usePWAInstall()
+  const { isInstalled, isIOS, isAndroid, isMobile, isInstallable, promptInstall } = usePWAInstall()
   const [mounted, setMounted] = useState(false)
+  const [installing, setInstalling] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -26,6 +25,14 @@ export default function InstallPage() {
     }
   }, [mounted, isInstalled, router])
 
+  const handleInstall = async () => {
+    setInstalling(true)
+    const accepted = await promptInstall()
+    if (!accepted) {
+      setInstalling(false)
+    }
+  }
+
   // Affiche un écran de chargement pendant l'hydratation
   if (!mounted) {
     return (
@@ -36,93 +43,184 @@ export default function InstallPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white">
-      {/* Header */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        {/* Logo / Icône */}
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg">
-          <FileText className="h-10 w-10" />
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-600 to-blue-800">
+      {/* Header avec logo et titre */}
+      <div className="px-6 pt-12 pb-6 text-center text-white">
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-lg">
+          <FileText className="h-10 w-10 text-blue-600" />
         </div>
-
-        {/* Titre */}
-        <h1 className="mb-2 text-center text-3xl font-bold text-slate-900">
-          FiduDocs
-        </h1>
-        <p className="mb-8 text-center text-slate-600">
-          Gestion documentaire simplifiée
-        </p>
-
-        {/* Features */}
-        <div className="mb-8 w-full max-w-sm space-y-4">
-          <div className="flex items-start gap-3 rounded-lg bg-white p-4 shadow-sm">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
-              <Smartphone className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-900">Capture facile</h3>
-              <p className="text-sm text-slate-600">
-                Prenez vos justificatifs en photo directement depuis l&apos;app
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 rounded-lg bg-white p-4 shadow-sm">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100">
-              <Shield className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-900">Sécurisé</h3>
-              <p className="text-sm text-slate-600">
-                Vos documents sont transmis de façon sécurisée à votre fiduciaire
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions d'installation */}
-        <div className="w-full max-w-sm space-y-4">
-          {/* Android avec prompt disponible */}
-          {isAndroid && isInstallable && (
-            <InstallButton className="w-full h-14 text-lg" />
-          )}
-
-          {/* Android sans prompt (navigateur non supporté ou déjà refusé) */}
-          {isAndroid && !isInstallable && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-              <p className="font-medium">Installation</p>
-              <p>
-                Utilisez le menu de votre navigateur (⋮) puis &quot;Installer l&apos;application&quot; ou &quot;Ajouter à l&apos;écran d&apos;accueil&quot;.
-              </p>
-            </div>
-          )}
-
-          {/* iOS - Instructions manuelles */}
-          {isIOS && <IOSInstructions />}
-
-          {/* Desktop - Message informatif */}
-          {!isMobile && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-medium text-slate-900">Application mobile</p>
-              <p>
-                FiduDocs est optimisé pour mobile. Ouvrez cette page sur votre smartphone pour installer l&apos;application.
-              </p>
-            </div>
-          )}
-        </div>
+        <h1 className="text-3xl font-bold">FiduDocs</h1>
+        <p className="mt-1 text-blue-100">Vos documents, simplifiés</p>
       </div>
 
-      {/* Footer - Lien vers login */}
-      <div className="border-t border-slate-200 bg-white px-6 py-6">
-        <div className="mx-auto max-w-sm">
+      {/* Zone principale - Carte blanche */}
+      <div className="flex-1 rounded-t-3xl bg-white px-6 pt-8 pb-6">
+        {/* Bouton d'installation principal - Android avec prompt */}
+        {isAndroid && isInstallable && (
+          <div className="mb-8">
+            <Button
+              onClick={handleInstall}
+              disabled={installing}
+              size="lg"
+              className="w-full h-16 text-xl bg-green-600 hover:bg-green-700 shadow-lg"
+            >
+              {installing ? (
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <>
+                  <Download className="mr-3 h-6 w-6" />
+                  Installer l&apos;application
+                </>
+              )}
+            </Button>
+            <p className="mt-3 text-center text-sm text-slate-500">
+              Gratuit - Aucun téléchargement depuis le store
+            </p>
+          </div>
+        )}
+
+        {/* Instructions Android - sans prompt natif */}
+        {isAndroid && !isInstallable && (
+          <div className="mb-8">
+            <h2 className="mb-4 text-center text-xl font-bold text-slate-900">
+              Installer en 2 étapes
+            </h2>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 rounded-xl bg-slate-50 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold">
+                  1
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-900">Ouvrez le menu</p>
+                  <p className="text-sm text-slate-600">
+                    Appuyez sur les 3 points <MoreVertical className="inline h-4 w-4" /> en haut à droite de Chrome
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 rounded-xl bg-slate-50 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold">
+                  2
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-900">Installer l&apos;application</p>
+                  <p className="text-sm text-slate-600">
+                    Appuyez sur &quot;Installer l&apos;application&quot; ou &quot;Ajouter à l&apos;écran d&apos;accueil&quot;
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-xl border-2 border-dashed border-green-300 bg-green-50 p-4 text-center">
+              <Check className="mx-auto mb-2 h-8 w-8 text-green-600" />
+              <p className="font-medium text-green-800">
+                L&apos;icône FiduDocs apparaîtra sur votre écran d&apos;accueil
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Instructions iOS */}
+        {isIOS && (
+          <div className="mb-8">
+            <h2 className="mb-4 text-center text-xl font-bold text-slate-900">
+              Installer en 3 étapes
+            </h2>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 rounded-xl bg-slate-50 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold">
+                  1
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-900">Appuyez sur Partager</p>
+                  <p className="text-sm text-slate-600">
+                    Touchez l&apos;icône <Share className="inline h-4 w-4 text-blue-500" /> en bas de Safari
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 rounded-xl bg-slate-50 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold">
+                  2
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-900">Sur l&apos;écran d&apos;accueil</p>
+                  <p className="text-sm text-slate-600">
+                    Faites défiler et appuyez sur <Plus className="inline h-4 w-4" /> &quot;Sur l&apos;écran d&apos;accueil&quot;
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 rounded-xl bg-slate-50 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold">
+                  3
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-900">Confirmez</p>
+                  <p className="text-sm text-slate-600">
+                    Appuyez sur &quot;Ajouter&quot; en haut à droite
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-xl border-2 border-dashed border-green-300 bg-green-50 p-4 text-center">
+              <Check className="mx-auto mb-2 h-8 w-8 text-green-600" />
+              <p className="font-medium text-green-800">
+                L&apos;icône FiduDocs apparaîtra sur votre écran d&apos;accueil
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop */}
+        {!isMobile && (
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+              <FileText className="h-8 w-8 text-slate-400" />
+            </div>
+            <h2 className="mb-2 text-xl font-bold text-slate-900">Application mobile</h2>
+            <p className="text-slate-600">
+              FiduDocs est une application mobile. Scannez le QR code ou ouvrez cette page sur votre smartphone pour l&apos;installer.
+            </p>
+          </div>
+        )}
+
+        {/* Avantages */}
+        <div className="mb-8 space-y-3">
+          <h3 className="text-center text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Pourquoi installer ?
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-slate-50 p-3 text-center">
+              <p className="text-2xl">📸</p>
+              <p className="text-xs text-slate-600">Capture rapide</p>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3 text-center">
+              <p className="text-2xl">🔒</p>
+              <p className="text-xs text-slate-600">100% sécurisé</p>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3 text-center">
+              <p className="text-2xl">📱</p>
+              <p className="text-xs text-slate-600">Accès direct</p>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3 text-center">
+              <p className="text-2xl">⚡</p>
+              <p className="text-xs text-slate-600">Plus rapide</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Lien pour continuer sans installer */}
+        <div className="border-t border-slate-200 pt-6">
           <Link href="/login" onClick={() => markInstallSeen()}>
-            <Button variant="outline" className="w-full">
+            <Button variant="ghost" className="w-full text-slate-500">
               Continuer sans installer
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
-          <p className="mt-3 text-center text-xs text-slate-500">
-            Vous pourrez installer l&apos;application plus tard
-          </p>
         </div>
       </div>
     </div>
