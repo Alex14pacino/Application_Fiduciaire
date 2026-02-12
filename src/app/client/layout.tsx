@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
 import { MobileNav } from '@/components/layout/mobile-nav'
+import { InstallPrompt } from '@/components/pwa/install-prompt'
 
 /**
  * Layout pour les pages client
@@ -37,6 +38,7 @@ export default async function ClientLayout({
         {children}
       </main>
       <MobileNav />
+      <InstallPrompt />
     </div>
   )
 }
