@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Download, X } from 'lucide-react'
+import { Download, X, Share, Plus, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePWAInstall } from '@/lib/hooks/use-pwa-install'
 
@@ -10,7 +10,7 @@ import { usePWAInstall } from '@/lib/hooks/use-pwa-install'
  * sur mobile si l'app n'est pas installée
  */
 export function InstallPrompt() {
-  const { isInstalled, isInstallable, isMobile, promptInstall } = usePWAInstall()
+  const { isInstalled, isInstallable, isMobile, isIOS, isAndroid, promptInstall } = usePWAInstall()
   const [showPrompt, setShowPrompt] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [installing, setInstalling] = useState(false)
@@ -29,23 +29,25 @@ export function InstallPrompt() {
       }
     }
 
-    // Affiche le prompt après un court délai si les conditions sont réunies
+    // Affiche le prompt après un court délai si sur mobile et pas installé
     const timer = setTimeout(() => {
-      if (isMobile && !isInstalled && isInstallable && !dismissed) {
+      if (isMobile && !isInstalled && !dismissed) {
         setShowPrompt(true)
       }
-    }, 2000) // Attendre 2 secondes pour ne pas être trop intrusif
+    }, 2000)
 
     return () => clearTimeout(timer)
-  }, [isMobile, isInstalled, isInstallable, dismissed])
+  }, [isMobile, isInstalled, dismissed])
 
   const handleInstall = async () => {
-    setInstalling(true)
-    const accepted = await promptInstall()
-    setInstalling(false)
+    if (isInstallable) {
+      setInstalling(true)
+      const accepted = await promptInstall()
+      setInstalling(false)
 
-    if (accepted) {
-      setShowPrompt(false)
+      if (accepted) {
+        setShowPrompt(false)
+      }
     }
   }
 
@@ -59,9 +61,71 @@ export function InstallPrompt() {
     return null
   }
 
+  // Contenu pour iOS (instructions Safari)
+  const renderIOSInstructions = () => (
+    <div className="text-left">
+      <p className="mb-3 text-sm font-medium text-slate-900">
+        Pour installer sur iPhone/iPad :
+      </p>
+      <ol className="space-y-2 text-sm text-slate-600">
+        <li className="flex items-center gap-2">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">1</span>
+          Appuyez sur <Share className="inline h-4 w-4 text-blue-500" /> en bas
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">2</span>
+          <Plus className="inline h-4 w-4" /> <strong>Sur l&apos;écran d&apos;accueil</strong>
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">3</span>
+          Appuyez sur <strong>Ajouter</strong>
+        </li>
+      </ol>
+    </div>
+  )
+
+  // Contenu pour Android sans prompt natif (Firefox, Samsung Internet)
+  const renderAndroidManualInstructions = () => (
+    <div className="text-left">
+      <p className="mb-3 text-sm font-medium text-slate-900">
+        Pour installer l&apos;application :
+      </p>
+      <ol className="space-y-2 text-sm text-slate-600">
+        <li className="flex items-center gap-2">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">1</span>
+          Appuyez sur <MoreVertical className="inline h-4 w-4" /> en haut à droite
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">2</span>
+          <strong>Ajouter à l&apos;écran d&apos;accueil</strong>
+        </li>
+      </ol>
+    </div>
+  )
+
+  // Contenu pour Android avec prompt natif (Chrome, Brave, Edge)
+  const renderInstallButton = () => (
+    <div className="space-y-3">
+      <Button
+        onClick={handleInstall}
+        disabled={installing}
+        className="w-full h-12"
+      >
+        {installing ? (
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+        ) : (
+          <>
+            <Download className="mr-2 h-5 w-5" />
+            Installer
+          </>
+        )}
+      </Button>
+    </div>
+  )
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md animate-in slide-in-from-bottom duration-300 rounded-t-2xl bg-white p-6 shadow-xl">
+      <div className="relative w-full max-w-md animate-in slide-in-from-bottom duration-300 rounded-2xl bg-white p-6 shadow-xl">
         {/* Bouton fermer */}
         <button
           onClick={handleDismiss}
@@ -80,34 +144,24 @@ export function InstallPrompt() {
             Installer FiduDocs
           </h3>
 
-          <p className="mb-6 text-sm text-slate-600">
-            Ajoutez l&apos;application à votre écran d&apos;accueil pour un accès plus rapide.
+          <p className="mb-4 text-sm text-slate-600">
+            Ajoutez l&apos;application à votre écran d&apos;accueil pour un accès rapide.
           </p>
 
-          <div className="space-y-3">
-            <Button
-              onClick={handleInstall}
-              disabled={installing}
-              className="w-full h-12"
-            >
-              {installing ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <>
-                  <Download className="mr-2 h-5 w-5" />
-                  Installer
-                </>
-              )}
-            </Button>
-
-            <Button
-              onClick={handleDismiss}
-              variant="ghost"
-              className="w-full text-slate-500"
-            >
-              Plus tard
-            </Button>
+          {/* Contenu selon la plateforme */}
+          <div className="mb-4">
+            {isIOS && renderIOSInstructions()}
+            {isAndroid && isInstallable && renderInstallButton()}
+            {isAndroid && !isInstallable && renderAndroidManualInstructions()}
           </div>
+
+          <Button
+            onClick={handleDismiss}
+            variant="ghost"
+            className="w-full text-slate-500"
+          >
+            Plus tard
+          </Button>
         </div>
       </div>
     </div>
