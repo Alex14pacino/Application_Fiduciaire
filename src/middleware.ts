@@ -1,8 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-// Routes publiques accessibles sans authentification
-const publicRoutes = ['/login', '/signup', '/forgot-password', '/auth/callback', '/api', '/install']
+// Routes publiques qui n'ont pas besoin de vérification auth du tout
+const fullyPublicRoutes = ['/install', '/auth/callback', '/api']
+
+// Routes publiques qui peuvent rediriger si déjà connecté
+const authRoutes = ['/login', '/signup', '/forgot-password']
 
 // Routes réservées aux clients
 const clientRoutes = ['/client']
@@ -16,13 +19,20 @@ const fiduciaryRoutes = ['/fiduciary']
  * - Redirige selon le rôle de l'utilisateur
  */
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user, supabase } = await updateSession(request)
   const pathname = request.nextUrl.pathname
 
-  // Autorise l'accès aux routes publiques
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
-    // Si l'utilisateur est connecté et tente d'accéder à login/signup, rediriger
-    if (user && (pathname === '/login' || pathname === '/signup')) {
+  // Routes totalement publiques - pas de vérification Supabase
+  if (fullyPublicRoutes.some((route) => pathname.startsWith(route))) {
+    return NextResponse.next()
+  }
+
+  // Pour toutes les autres routes, on vérifie la session
+  const { supabaseResponse, user, supabase } = await updateSession(request)
+
+  // Routes d'authentification (login/signup)
+  if (authRoutes.some((route) => pathname.startsWith(route))) {
+    // Si l'utilisateur est connecté, rediriger vers son dashboard
+    if (user) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
