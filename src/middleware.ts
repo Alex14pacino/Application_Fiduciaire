@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 // Routes publiques accessibles sans authentification
-const publicRoutes = ['/login', '/signup', '/forgot-password', '/auth/callback', '/api']
+const publicRoutes = ['/login', '/signup', '/forgot-password', '/auth/callback', '/api', '/install']
 
 // Routes réservées aux clients
 const clientRoutes = ['/client']
