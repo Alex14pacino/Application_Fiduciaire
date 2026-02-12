@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FileText, Download, Share, Plus, ArrowRight } from 'lucide-react'
+import { FileText, Download, Share, Plus, ArrowRight, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -20,6 +20,7 @@ export default function InstallPage() {
   const { isInstalled, isIOS, isAndroid, isMobile, isInstallable, promptInstall } = usePWAInstall()
   const [mounted, setMounted] = useState(false)
   const [installing, setInstalling] = useState(false)
+  const [showManualInstructions, setShowManualInstructions] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -33,10 +34,18 @@ export default function InstallPage() {
   }, [mounted, isInstalled, router])
 
   const handleInstall = async () => {
-    setInstalling(true)
-    const accepted = await promptInstall()
-    if (!accepted) {
-      setInstalling(false)
+    // Si le prompt natif est disponible, l'utiliser
+    if (isInstallable) {
+      setInstalling(true)
+      const accepted = await promptInstall()
+      if (!accepted) {
+        setInstalling(false)
+        // Si l'utilisateur a refusé ou fermé, montrer les instructions manuelles
+        setShowManualInstructions(true)
+      }
+    } else {
+      // Sinon, afficher directement les instructions manuelles
+      setShowManualInstructions(true)
     }
   }
 
@@ -68,11 +77,11 @@ export default function InstallPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Android - Bouton d'installation */}
-            {isAndroid && (
+            {isAndroid && !showManualInstructions && (
               <div className="space-y-4">
                 <Button
                   onClick={handleInstall}
-                  disabled={installing || !isInstallable}
+                  disabled={installing}
                   size="lg"
                   className="w-full h-12 text-base"
                 >
@@ -85,12 +94,43 @@ export default function InstallPage() {
                     </>
                   )}
                 </Button>
+              </div>
+            )}
 
-                {!isInstallable && (
-                  <p className="text-center text-sm text-slate-500">
-                    Si le bouton ne fonctionne pas, utilisez le menu Chrome (⋮) → &quot;Installer l&apos;application&quot;
+            {/* Android - Instructions manuelles (si le prompt ne marche pas) */}
+            {isAndroid && showManualInstructions && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-3 font-medium text-slate-900">
+                    Pour installer, suivez ces étapes :
                   </p>
-                )}
+                  <ol className="space-y-3 text-sm text-slate-600">
+                    <li className="flex items-start gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                        1
+                      </span>
+                      <span>
+                        Appuyez sur <MoreVertical className="inline h-4 w-4" /> le menu en haut à droite de Chrome
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                        2
+                      </span>
+                      <span>
+                        Appuyez sur <strong>&quot;Installer l&apos;application&quot;</strong> ou <strong>&quot;Ajouter à l&apos;écran d&apos;accueil&quot;</strong>
+                      </span>
+                    </li>
+                  </ol>
+                </div>
+                <Button
+                  onClick={() => setShowManualInstructions(false)}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  Réessayer l&apos;installation automatique
+                </Button>
               </div>
             )}
 

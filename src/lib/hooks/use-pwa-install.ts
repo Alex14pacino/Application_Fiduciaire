@@ -7,6 +7,17 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+// Stockage global pour capturer l'événement avant le montage React
+let deferredPrompt: BeforeInstallPromptEvent | null = null
+
+// Capture l'événement dès que possible (avant React)
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e: Event) => {
+    e.preventDefault()
+    deferredPrompt = e as BeforeInstallPromptEvent
+  })
+}
+
 interface UsePWAInstallReturn {
   isInstallable: boolean
   isInstalled: boolean
@@ -31,6 +42,11 @@ export function usePWAInstall(): UsePWAInstallReturn {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    // Récupère le prompt capturé globalement
+    if (deferredPrompt) {
+      setInstallPrompt(deferredPrompt)
+    }
+
     // Détection de la plateforme
     const userAgent = window.navigator.userAgent.toLowerCase()
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent)
@@ -63,6 +79,7 @@ export function usePWAInstall(): UsePWAInstallReturn {
     // Capture l'événement beforeinstallprompt (Android/Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
+      deferredPrompt = e as BeforeInstallPromptEvent
       setInstallPrompt(e as BeforeInstallPromptEvent)
     }
 
@@ -72,6 +89,7 @@ export function usePWAInstall(): UsePWAInstallReturn {
     const handleAppInstalled = () => {
       setIsInstalled(true)
       setInstallPrompt(null)
+      deferredPrompt = null
     }
 
     window.addEventListener('appinstalled', handleAppInstalled)
@@ -88,16 +106,19 @@ export function usePWAInstall(): UsePWAInstallReturn {
    * Retourne true si l'utilisateur a accepté, false sinon
    */
   const promptInstall = useCallback(async (): Promise<boolean> => {
-    if (!installPrompt) {
+    const prompt = installPrompt || deferredPrompt
+
+    if (!prompt) {
       return false
     }
 
     try {
-      await installPrompt.prompt()
-      const { outcome } = await installPrompt.userChoice
+      await prompt.prompt()
+      const { outcome } = await prompt.userChoice
 
       if (outcome === 'accepted') {
         setInstallPrompt(null)
+        deferredPrompt = null
         return true
       }
 
@@ -109,7 +130,7 @@ export function usePWAInstall(): UsePWAInstallReturn {
   }, [installPrompt])
 
   return {
-    isInstallable: !!installPrompt,
+    isInstallable: !!(installPrompt || deferredPrompt),
     isInstalled,
     isIOS,
     isAndroid,
